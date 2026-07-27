@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -26,16 +27,24 @@ func main() {
 }
 
 func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir string) int {
-	file, _ := os.Create("linko.access.log")
-	var logger = log.New(os.Stderr, "DEBUG: ", log.LstdFlags)
-	var accessLogger = log.New(file, "INFO: ", log.LstdFlags)
-	st, err := store.New(dataDir, accessLogger)
+	logFile := os.Getenv("LINKO_LOG_FILE")
+	var multiWriter io.Writer = os.Stderr
+	if logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
+		if err != nil {
+			log.Fatalf("failed to open log file: %v", err)
+		}
+		multiWriter = io.MultiWriter(os.Stderr, f)
+	}
+
+	var logger = log.New(multiWriter, "INFO: ", log.LstdFlags)
+	st, err := store.New(dataDir, logger)
 
 	if err != nil {
 		logger.Printf("failed to create store: %v", err)
 		return 1
 	}
-	s := newServer(*st, httpPort, cancel, logger, accessLogger)
+	s := newServer(*st, httpPort, cancel, logger)
 	var serverErr error
 	go func() {
 		serverErr = s.start()
