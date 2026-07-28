@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"boot.dev/linko/internal/store"
+	pkgerr "github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -54,7 +55,7 @@ func (s *server) handlerShortenLink(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("invalid target URL: %v", err), http.StatusBadRequest)
 		s.logger.Error("failed to shorten URL",
 			"url", longURL,
-			"error", err)
+			"error", pkgerr.WithStack(err))
 		return
 	}
 	shortCode, err := s.store.Create(r.Context(), longURL)
@@ -62,7 +63,7 @@ func (s *server) handlerShortenLink(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to shorten URL", http.StatusInternalServerError)
 		s.logger.Error("failed to shorten URL",
 			"url", longURL,
-			"error", err)
+			"error", pkgerr.WithStack(err))
 		return
 	}
 	s.logger.Info("Generated short code",
@@ -80,7 +81,7 @@ func (s *server) handlerRedirect(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "not found", http.StatusNotFound)
 		} else {
 			s.logger.Error("failed to lookup URL",
-				"error", err)
+				"error", pkgerr.WithStack(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
@@ -102,7 +103,7 @@ func (s *server) handlerListURLs(w http.ResponseWriter, r *http.Request) {
 	codes, err := s.store.List(r.Context())
 	if err != nil {
 		s.logger.Error("failed to list URLs",
-			"error", err)
+			"error", pkgerr.WithStack(err))
 		http.Error(w, "failed to list URLs", http.StatusInternalServerError)
 		return
 	}

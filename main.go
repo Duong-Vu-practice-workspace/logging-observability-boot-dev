@@ -12,10 +12,21 @@ import (
 	"time"
 
 	"boot.dev/linko/internal/store"
+	pkgerr "github.com/pkg/errors"
 )
 
 type closeFunc func() error
 
+func replaceAttr(groups []string, a slog.Attr) slog.Attr {
+	if a.Key == "error" {
+		err, ok := a.Value.Any().(error)
+		if !ok {
+			return a
+		}
+		return slog.String("error", fmt.Sprintf("%+v", err))
+	}
+	return a
+}
 func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -42,14 +53,16 @@ func initializeLogger(logFile string) (*slog.Logger, closeFunc, error) {
 			return file.Close()
 		}
 		debugHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
+			ReplaceAttr: replaceAttr,
 		})
 		standardHandler := slog.NewJSONHandler(bufferedFile, &slog.HandlerOptions{
-			Level: slog.LevelInfo,
+			ReplaceAttr: replaceAttr,
 		})
 		return slog.New(slog.NewMultiHandler(debugHandler, standardHandler)), closeFunc, nil
 	}
-	return slog.New(slog.NewTextHandler(os.Stderr, nil)), nil, nil
+	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		ReplaceAttr: replaceAttr,
+	})), nil, nil
 }
 func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir string) int {
 	logFile := os.Getenv("LINKO_LOG_FILE")
@@ -61,7 +74,7 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 
 	if err != nil {
 		logger.Error("failed to create store",
-			"error", err)
+			"error", pkgerr.WithStack(err))
 		return 1
 	}
 	s := newServer(*st, httpPort, cancel, logger)
@@ -76,12 +89,12 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 
 	if err := s.shutdown(shutdownCtx); err != nil {
 		s.logger.Error("failed to shutdown server",
-			"error", err)
+			"error", pkgerr.WithStack(err))
 		return 1
 	}
 	if serverErr != nil {
 		s.logger.Error("server error",
-			"error", serverErr)
+			"error", pkgerr.WithStack(serverErr))
 		return 1
 	}
 	return 0
