@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	pkgerr "github.com/pkg/errors"
 )
 
 type ShortURL struct {
@@ -111,10 +109,7 @@ func (s *Store) Lookup(_ context.Context, short string) (string, error) {
 		return "", ErrNotFound
 	}
 	if err != nil {
-		s.logger.Error("failed to read",
-			"file", shortcodeFilepath,
-			"error", pkgerr.WithStack(err))
-		return "", err
+		return "", fmt.Errorf("failed to read %s: %w", shortcodeFilepath, err)
 	}
 	return string(data), nil
 }
