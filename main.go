@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,7 +29,7 @@ func main() {
 	cancel()
 	os.Exit(status)
 }
-func initializeLogger(logFile string) (*log.Logger, closeFunc, error) {
+func initializeLogger(logFile string) (*slog.Logger, closeFunc, error) {
 	if logFile != "" {
 		file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 		if err != nil {
@@ -43,9 +43,9 @@ func initializeLogger(logFile string) (*log.Logger, closeFunc, error) {
 			}
 			return file.Close()
 		}
-		return log.New(multiWriter, "", log.LstdFlags), closeFunc, nil
+		return slog.New(slog.NewTextHandler(multiWriter, nil)), closeFunc, nil
 	}
-	return log.New(os.Stderr, "", log.LstdFlags), nil, nil
+	return slog.New(slog.NewTextHandler(os.Stderr, nil)), nil, nil
 }
 func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir string) int {
 	logFile := os.Getenv("LINKO_LOG_FILE")
@@ -56,7 +56,7 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 	st, err := store.New(dataDir, logger)
 
 	if err != nil {
-		logger.Printf("failed to create store: %v", err)
+		logger.Info(fmt.Sprintf("failed to create store: %v", err))
 		return 1
 	}
 	s := newServer(*st, httpPort, cancel, logger)
@@ -70,11 +70,11 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 	defer cancel()
 
 	if err := s.shutdown(shutdownCtx); err != nil {
-		s.logger.Printf("failed to shutdown server: %v", err)
+		s.logger.Info(fmt.Sprintf("failed to shutdown server: %v", err))
 		return 1
 	}
 	if serverErr != nil {
-		s.logger.Printf("server error: %v\n", serverErr)
+		s.logger.Info(fmt.Sprintf("server error: %v\n", serverErr))
 		return 1
 	}
 	return 0
