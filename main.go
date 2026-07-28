@@ -44,7 +44,7 @@ func initializeLogger(logFile string) (*slog.Logger, closeFunc, error) {
 		debugHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})
-		standardHandler := slog.NewTextHandler(bufferedFile, &slog.HandlerOptions{
+		standardHandler := slog.NewJSONHandler(bufferedFile, &slog.HandlerOptions{
 			Level: slog.LevelInfo,
 		})
 		return slog.New(slog.NewMultiHandler(debugHandler, standardHandler)), closeFunc, nil
