@@ -31,10 +31,12 @@ func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 		}
 		var stackErr stackTracer
 		if errors.As(err, &stackErr) {
-			return slog.GroupAttrs("error",
-				slog.Attr{Key: "message", Value: slog.StringValue(stackErr.Error())},
-				slog.Attr{Key: "stack_trace", Value: slog.StringValue(fmt.Sprintf("%+v", stackErr.StackTrace()))},
-			)
+			attrs := []slog.Attr{
+				{Key: "message", Value: slog.StringValue(stackErr.Error())},
+				{Key: "stack_trace", Value: slog.StringValue(fmt.Sprintf("%+v", stackErr.StackTrace()))},
+			}
+			attrs = append(attrs, Attrs(err)...)
+			return slog.GroupAttrs("error", attrs...)
 		}
 		return slog.String("error", fmt.Sprintf("%+v", err))
 	}

@@ -54,16 +54,14 @@ func (s *server) handlerShortenLink(w http.ResponseWriter, r *http.Request) {
 	if err := checkDestination(longURL); err != nil {
 		http.Error(w, fmt.Sprintf("invalid target URL: %v", err), http.StatusBadRequest)
 		s.logger.Error("failed to shorten URL",
-			"url", longURL,
-			"error", pkgerr.WithStack(err))
+			"error", WithAttrs(pkgerr.WithStack(err), "url", longURL))
 		return
 	}
 	shortCode, err := s.store.Create(r.Context(), longURL)
 	if err != nil {
 		http.Error(w, "failed to shorten URL", http.StatusInternalServerError)
 		s.logger.Error("failed to shorten URL",
-			"url", longURL,
-			"error", pkgerr.WithStack(err))
+			"error", WithAttrs(pkgerr.WithStack(err), "url", longURL))
 		return
 	}
 	s.logger.Info("Generated short code",
