@@ -34,7 +34,7 @@ func Test_requestLogger(t *testing.T) {
 	req := httptest.NewRequest("POST", "http://lin.ko/api/stats", strings.NewReader("hello"))
 	rr := httptest.NewRecorder()
 	loggedHandler.ServeHTTP(rr, req)
-	const expectedLogString = `time=2023-10-01T12:34:57.000Z level=INFO msg="Served request" method=POST path=/api/stats client_ip=192.0.2.1:1234 duration=42ms request_body_bytes=5 response_status=201 response_body_bytes=2` + "\n"
+	const expectedLogString = `time=2023-10-01T12:34:57.000Z level=INFO msg="Served request" method=POST path=/api/stats client_ip=192.0.2.1:1234 duration=42ms request_body_bytes=5 response_status=201 response_body_bytes=2 username=""` + "\n"
 	const expectedStatusCode = http.StatusCreated
 
 	if logBuffer.String() != expectedLogString {
