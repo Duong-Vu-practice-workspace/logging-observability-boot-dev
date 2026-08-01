@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -16,17 +18,24 @@ func Test_requestLogger(t *testing.T) {
 			if a.Key == slog.TimeKey {
 				return slog.Time(slog.TimeKey, time.Date(2023, 10, 1, 12, 34, 57, 0, time.UTC))
 			}
+			if a.Key == "duration" {
+				return slog.Duration(a.Key, 42*time.Millisecond)
+			}
 			return a
 		},
 	}))
 	requestLoggerMiddleware := requestLogger(logger)
-	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte("ok"))
+	})
 	loggedHandler := requestLoggerMiddleware(dummyHandler)
-	req := httptest.NewRequest("GET", "http://lin.ko/api/stats", nil)
+	req := httptest.NewRequest("POST", "http://lin.ko/api/stats", strings.NewReader("hello"))
 	rr := httptest.NewRecorder()
 	loggedHandler.ServeHTTP(rr, req)
-	const expectedLogString = `time=2023-10-01T12:34:57.000Z level=INFO msg="Served request" method=GET path=/api/stats client_ip=192.0.2.1:1234` + "\n"
-	const expectedStatusCode = http.StatusOK
+	const expectedLogString = `time=2023-10-01T12:34:57.000Z level=INFO msg="Served request" method=POST path=/api/stats client_ip=192.0.2.1:1234 duration=42ms request_body_bytes=5 response_status=201 response_body_bytes=2` + "\n"
+	const expectedStatusCode = http.StatusCreated
 
 	if logBuffer.String() != expectedLogString {
 		t.Errorf("expected log %q, got %q", expectedLogString, logBuffer.String())
