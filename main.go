@@ -76,6 +76,17 @@ func main() {
 	os.Exit(status)
 }
 func initializeLogger(logFile string) (*slog.Logger, closeFunc, error) {
+	debugHandler := &colorHandler{Handler: slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			a = replaceAttr(groups, a)
+			if a.Key == slog.LevelKey {
+				if level, ok := a.Value.Any().(slog.Level); ok {
+					a.Value = slog.StringValue(colorize(level, level.String()))
+				}
+			}
+			return a
+		},
+	})}
 	if logFile != "" {
 		file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 		if err != nil {
@@ -88,17 +99,12 @@ func initializeLogger(logFile string) (*slog.Logger, closeFunc, error) {
 			}
 			return file.Close()
 		}
-		debugHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-			ReplaceAttr: replaceAttr,
-		})
 		standardHandler := slog.NewJSONHandler(bufferedFile, &slog.HandlerOptions{
 			ReplaceAttr: replaceAttr,
 		})
 		return slog.New(slog.NewMultiHandler(debugHandler, standardHandler)), closeFunc, nil
 	}
-	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		ReplaceAttr: replaceAttr,
-	})), nil, nil
+	return slog.New(debugHandler), nil, nil
 }
 func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir string) int {
 	logFile := os.Getenv("LINKO_LOG_FILE")
