@@ -15,6 +15,7 @@ import (
 	"boot.dev/linko/internal/build"
 	"boot.dev/linko/internal/store"
 	pkgerr "github.com/pkg/errors"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type stackTracer interface {
@@ -88,16 +89,20 @@ func initializeLogger(logFile string) (*slog.Logger, closeFunc, error) {
 		},
 	})}
 	if logFile != "" {
-		file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+		rotating := &lumberjack.Logger{
+			Filename:   logFile,
+			MaxSize:    1,
+			MaxAge:     28,
+			MaxBackups: 10,
+			LocalTime:  false,
+			Compress:   true,
 		}
-		bufferedFile := bufio.NewWriterSize(file, 8192)
+		bufferedFile := bufio.NewWriterSize(rotating, 8192)
 		closeFunc := func() error {
 			if err := bufferedFile.Flush(); err != nil {
 				return err
 			}
-			return file.Close()
+			return rotating.Close()
 		}
 		standardHandler := slog.NewJSONHandler(bufferedFile, &slog.HandlerOptions{
 			ReplaceAttr: replaceAttr,

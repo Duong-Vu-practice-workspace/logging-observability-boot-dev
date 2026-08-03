@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -52,7 +51,7 @@ func (s *server) handlerShortenLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := checkDestination(longURL); err != nil {
-		httpError(r.Context(), w, http.StatusBadRequest, fmt.Errorf("invalid target URL: %v", err))
+		httpError(r.Context(), w, http.StatusBadRequest, errors.New("invalid target URL"))
 		s.logger.Error("failed to shorten URL",
 			"error", WithAttrs(pkgerr.WithStack(err), "url", longURL))
 		return
