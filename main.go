@@ -7,7 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
+	"strings"
 	"os/signal"
 	"syscall"
 	"time"
@@ -54,6 +56,64 @@ func collectAttrs(err error) []slog.Attr {
 	return attrs
 }
 
+
+// sensitiveKeys are attribute keys whose values should never reach a log.
+var sensitiveKeys = []string{"password", "key", "apikey", "secret", "pin", "creditcardno"}
+
+// redactValue replaces a string value with [REDACTED] if it carries a
+// suspected secret: a sensitive key name, or a URL that embeds credentials.
+func redactValue(v string) string {
+	if strings.Contains(v, "://") {
+		if stripped := stripURLCredentials(v); stripped != v {
+			return stripped
+		}
+	}
+	if containsAny(strings.ToLower(v), sensitiveKeys) {
+		return "[REDACTED]"
+	}
+	return v
+}
+
+func stripURLCredentials(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	if u.Hostname() == "" || (u.User == nil || u.User.Username() == "") {
+		return raw
+	}
+	u.User = url.User("xxxxx")
+	return u.String()
+}
+
+func containsAny(haystack string, needles []string) bool {
+	for _, n := range needles {
+		if strings.Contains(haystack, n) {
+			return true
+		}
+	}
+	return false
+}
+
+// sensitiveFilter is the last-resort filter. It runs last so redaction always
+// wins over any earlier transform that expanded a value.
+func sensitiveFilter(groups []string, a slog.Attr) slog.Attr {
+	if a.Value.Kind() != slog.KindString {
+		return a
+	}
+	if _, ok := a.Value.Any().(string); !ok {
+		return a
+	}
+	v := a.Value.String()
+	if a.Key == "username" || a.Key == "user" || containsAny(a.Key, sensitiveKeys) {
+		return slog.String(a.Key, "[REDACTED]")
+	}
+	if redacted := redactValue(v); redacted != v {
+		return slog.String(a.Key, redacted)
+	}
+	return a
+}
+
 func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 	if a.Key == "error" {
 		err, ok := a.Value.Any().(error)
@@ -62,7 +122,7 @@ func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 		}
 		return slog.GroupAttrs("error", errorAttrs(err)...)
 	}
-	return a
+	return sensitiveFilter(groups, a)
 }
 func main() {
 
