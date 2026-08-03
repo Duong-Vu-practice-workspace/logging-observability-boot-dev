@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
-	"strings"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -55,7 +55,6 @@ func collectAttrs(err error) []slog.Attr {
 	}
 	return attrs
 }
-
 
 // sensitiveKeys are attribute keys whose values should never reach a log.
 var sensitiveKeys = []string{"password", "key", "apikey", "secret", "pin", "creditcardno"}
