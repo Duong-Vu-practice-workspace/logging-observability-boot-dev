@@ -67,6 +67,24 @@ func (w *spyResponseWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
+// obfuscateIP masks the last element of an IP address so full client IPs
+// aren't persisted in logs. IPv4 masks the last octet. Unparsable input falls
+// back to an empty string.
+func obfuscateIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return ""
+	}
+	if v4 := ip.To4(); v4 != nil {
+		return fmt.Sprintf("%d.%d.%d.x", v4[0], v4[1], v4[2])
+	}
+	return ip.String()
+}
+
 func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +103,7 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			attrs := []any{
 				"method", r.Method,
 				"path", r.URL.Path,
-				"client_ip", r.RemoteAddr,
+				"client_ip", obfuscateIP(r.RemoteAddr),
 				"request_id", requestID,
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", spyReader.bytesRead),
