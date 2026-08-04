@@ -1,0 +1,36 @@
+File: linko
+Build ID: e854f7ccc7f237a59ae78d9eebf97f08c345e347
+Type: inuse_space
+Time: 2026-08-04 14:12:29 +07
+Duration: 30.01s, Total samples = 2592.19kB 
+Showing nodes accounting for 2592.19kB, 100% of 2592.19kB total
+      flat  flat%   sum%        cum   cum%
+ 1568.10kB 60.49% 60.49%  1568.10kB 60.49%  internal/bytealg.MakeNoZero
+  512.08kB 19.75% 80.25%   512.08kB 19.75%  log/slog.init.func1
+  512.02kB 19.75%   100%   512.02kB 19.75%  internal/profile.decodeString (inline)
+         0     0%   100%   512.02kB 19.75%  internal/profile.Parse
+         0     0%   100%   512.02kB 19.75%  internal/profile.decodeMessage
+         0     0%   100%   512.02kB 19.75%  internal/profile.decodeStrings (inline)
+         0     0%   100%   512.02kB 19.75%  internal/profile.init.func6
+         0     0%   100%   512.02kB 19.75%  internal/profile.parseUncompressed
+         0     0%   100%   512.02kB 19.75%  internal/profile.unmarshal (inline)
+         0     0%   100%   512.08kB 19.75%  log/slog.(*Logger).Info
+         0     0%   100%   512.08kB 19.75%  log/slog.(*Logger).log
+         0     0%   100%   512.08kB 19.75%  log/slog.(*TextHandler).Handle
+         0     0%   100%   512.08kB 19.75%  log/slog.(*commonHandler).handle
+         0     0%   100%   512.08kB 19.75%  log/slog.(*commonHandler).newHandleState
+         0     0%   100%  1568.10kB 60.49%  main.(*server).handlerRedirect
+         0     0%   100%  2592.19kB   100%  main.newServer.metricsMiddleware.func3
+         0     0%   100%  2592.19kB   100%  main.newServer.newServer.requestLogger.func1.func2
+         0     0%   100%  2080.11kB 80.25%  net/http.(*ServeMux).ServeHTTP
+         0     0%   100%  2592.19kB   100%  net/http.(*conn).serve
+         0     0%   100%  2592.19kB   100%  net/http.HandlerFunc.ServeHTTP
+         0     0%   100%  2592.19kB   100%  net/http.serverHandler.ServeHTTP
+         0     0%   100%   512.02kB 19.75%  net/http/pprof.Index
+         0     0%   100%   512.02kB 19.75%  net/http/pprof.collectProfile
+         0     0%   100%   512.02kB 19.75%  net/http/pprof.handler.ServeHTTP
+         0     0%   100%   512.02kB 19.75%  net/http/pprof.handler.serveDeltaProfile
+         0     0%   100%  1568.10kB 60.49%  strings.(*Builder).Grow
+         0     0%   100%  1568.10kB 60.49%  strings.(*Builder).grow
+         0     0%   100%  1568.10kB 60.49%  strings.Repeat
+         0     0%   100%   512.08kB 19.75%  sync.(*Pool).Get
