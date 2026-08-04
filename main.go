@@ -185,6 +185,13 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 	if err == nil {
 		logger = logger.With(slog.String("hostname", hostname))
 	}
+	shutdownTracing, err := initTracing(ctx)
+	if err != nil {
+		logger.Error("failed to init tracing",
+			"error", pkgerr.WithStack(err))
+		return 1
+	}
+	defer shutdownTracing(context.Background())
 	st, err := store.New(dataDir, logger)
 
 	if err != nil {
